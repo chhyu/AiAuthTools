@@ -1,0 +1,90 @@
+name: Build macOS
+
+on:
+  # 允许在 GitHub Actions 页面手动执行
+  workflow_dispatch:
+
+  # 推送 v 开头的版本标签时自动执行
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: read
+
+jobs:
+  build-macos:
+    name: Build macOS ${{ matrix.arch }}
+
+    runs-on: macos-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        arch:
+          - x64
+          - arm64
+
+    steps:
+      # 1. 拉取项目代码
+      - name: Checkout source code
+        uses: actions/checkout@v4
+
+      # 2. 安装 Node.js
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      # 3. 缓存 Electron 下载文件，减少重复下载
+      - name: Cache Electron
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/Library/Caches/electron
+            ~/Library/Caches/electron-builder
+          key: macos-${{ matrix.arch }}-electron-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            macos-${{ matrix.arch }}-electron-
+            macos-electron-
+
+      # 4. 安装项目依赖
+      # npm ci 会自动执行 package.json 中的 postinstall
+      - name: Install dependencies
+        run: npm ci
+
+      # 5. 执行类型检查和 electron-vite 构建
+      - name: Build Electron project
+        run: npm run build
+
+      # 6. 打包未签名的 macOS 应用
+      - name: Package macOS application
+        run: |
+          npx electron-builder \
+            --mac \
+            --${{ matrix.arch }} \
+            --publish never \
+            -c.mac.identity=null \
+            -c.mac.hardenedRuntime=false
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: "false"
+
+      # 7. 打印输出目录，方便排查
+      - name: Show build files
+        run: |
+          echo "dist_electron files:"
+          find dist_electron -maxdepth 2 -type f -print
+
+      # 8. 上传 dmg 和 zip
+      - name: Upload macOS artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: AuthTools-macOS-${{ matrix.arch }}
+          path: |
+            dist_electron/*.dmg
+            dist_electron/*.zip
+            dist_electron/*.yml
+            dist_electron/*.blockmap
+          if-no-files-found: error
+          retention-days: 14
