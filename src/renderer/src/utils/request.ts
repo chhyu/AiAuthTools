@@ -1,12 +1,13 @@
 import axios from 'axios';
+import { API_BASE_URL } from '@shared/apiConfig';
 // import { getToken, removeToken } from './auth'; // 假设存在的token工具函数
 
 // --------------------------
 // 项目内部API请求实例（保留原有功能）
 // --------------------------
 const service = axios.create({
-  baseURL: 'http://124.222.45.42:24433', 
-  // baseURL: 'http://localhost:5555',
+  // 接口地址统一在 src/shared/apiConfig.ts 中维护（测试/正式环境切换只改那一处）。
+  baseURL: API_BASE_URL,
   timeout: 60000, // 请求超时时间
   headers: {
     'Content-Type': 'application/json;charset=utf-8'
@@ -76,49 +77,6 @@ service.interceptors.response.use(
 );
 
 // --------------------------
-// 第三方API请求实例（新增）
-// --------------------------
-const thirdPartyService = axios.create({
-  timeout: 15000, // 第三方请求超时时间可适当延长
-  headers: {
-    'Content-Type': 'application/json;charset=utf-8'
-    // 不自动添加项目内token，保持纯净
-  }
-});
-
-// 第三方请求拦截器（按需配置）
-thirdPartyService.interceptors.request.use(
-  config => {
-    // 第三方请求不自动添加项目token，但保留扩展能力
-    return config;
-  },
-  error => {
-    console.error('第三方请求拦截器错误:', error);
-    return Promise.reject(error);
-  }
-);
-
-// 第三方响应拦截器（通用错误处理）
-thirdPartyService.interceptors.response.use(
-  response => {
-    // 第三方响应不做业务逻辑判断，直接返回原始数据
-    // 避免与第三方接口的状态码/格式冲突
-    return response.data;
-  },
-  error => {
-    console.error('第三方响应错误:', error);
-    
-    if (!error.response) {
-      console.error('第三方请求网络错误');
-      return Promise.reject(new Error('第三方请求网络错误'));
-    }
-    
-    // 第三方错误仅做通用提示，不做业务处理
-    return Promise.reject(new Error(`第三方请求失败: ${error.response.status}`));
-  }
-);
-
-// --------------------------
 // 统一封装请求方法
 // --------------------------
 const http = {
@@ -138,41 +96,7 @@ const http = {
       }
     }
   }),
-  
-  // 第三方请求方法（新增）
-  thirdParty: {
-    /**
-     * 第三方GET请求
-     * @param {string} url 完整的第三方URL
-     * @param {object} params 请求参数
-     * @param {object} config 额外配置，可包含headers
-     */
-    get: (url, params = {}, config = {}) => thirdPartyService.get(url, { params, ...config }),
-    
-    /**
-     * 第三方POST请求
-     * @param {string} url 完整的第三方URL
-     * @param {object} data 请求数据
-     * @param {object} config 额外配置，可包含headers
-     */
-    post: (url, data = {}, config = {}) => thirdPartyService.post(url, data, config),
-    
-    /**
-     * 第三方PUT请求
-     * @param {string} url 完整的第三方URL
-     * @param {object} data 请求数据
-     * @param {object} config 额外配置，可包含headers
-     */
-    put: (url, data = {}, config = {}) => thirdPartyService.put(url, data, config),
-    
-    /**
-     * 第三方DELETE请求
-     * @param {string} url 完整的第三方URL
-     * @param {object} params 请求参数
-     * @param {object} config 额外配置，可包含headers
-     */
-    delete: (url, params = {}, config = {}) => thirdPartyService.delete(url, { params, ...config })
-  }
+
 };
 
 export default http;

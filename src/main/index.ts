@@ -2,11 +2,11 @@ import { app, shell, BrowserWindow, dialog, ipcMain, session, webContents } from
 import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import { registerAppUpdater } from './appUpdater'
+import { API_BASE_URL } from '../shared/apiConfig'
 // import icon from '../../resources/icon.png?asset'
 
-const updateApiBaseUrl = 'http://124.222.45.42:24433'  //'http://localhost:5555'
-
-registerAppUpdater(updateApiBaseUrl)
+// 接口地址统一在 src/shared/apiConfig.ts 中维护
+registerAppUpdater(API_BASE_URL)
 
 let isAppQuitting = false
 app.on('before-quit', () => {

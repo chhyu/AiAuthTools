@@ -12,6 +12,7 @@ files:
 asarUnpack:
   - resources/**
 win:
+  signAndEditExecutable: false
   executableName: electron-app
 nsis:
   artifactName: ${name}-${version}-setup.${ext}
